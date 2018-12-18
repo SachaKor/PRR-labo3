@@ -120,6 +120,14 @@ public class Node {
         private boolean shouldRun;
         private boolean launchElection;
 
+        // streams and a buffer and a datagram packet needed to communicate to other nodes
+        byte[] buffer;
+        DatagramPacket packet;
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
+        ByteArrayInputStream byteArrayInputStream;
+        DataInputStream dataInputStream;
+
         ElectionManager(boolean launchElection) {
             try {
                 socket = new DatagramSocket(localAddress.getPort(), localAddress.getAddress());
@@ -130,87 +138,90 @@ public class Node {
             }
         }
 
-        private void sendMessageAndReceiveAck(MessageType messageType, Message message) {
-            byte[] buffer;
-            DatagramPacket packet;
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
-            ByteArrayInputStream byteArrayInputStream;
-            DataInputStream dataInputStream;
+        private void sendMessage(Message message) throws IOException {
+            dataOutputStream.writeByte((byte) message.getMessageType().ordinal());
+            dataOutputStream.writeInt(message.getId());
+            dataOutputStream.writeByte(id);
+            dataOutputStream.writeInt(message.getAptitude());
+            buffer = byteArrayOutputStream.toByteArray();
+            InetSocketAddress nextNode = getNextNodeAddress(id);
+            packet = new DatagramPacket(buffer, buffer.length, nextNode.getAddress(), nextNode.getPort());
+            socket.send(packet);
+            LOG.log(Level.INFO, () -> message + " sent to " + nextNode);
+            byteArrayOutputStream.reset();
+        }
 
-            try {
-                // send message
-                dataOutputStream.writeByte((byte) messageType.ordinal());
-                dataOutputStream.writeInt(message.getId());
-                dataOutputStream.writeByte(id);
-                dataOutputStream.writeInt(message.getAptitude());
-                buffer = byteArrayOutputStream.toByteArray();
-                InetSocketAddress nextNode = getNextNodeAddress(id);
-                packet = new DatagramPacket(buffer, buffer.length, nextNode.getAddress(), nextNode.getPort());
-                socket.send(packet);
-                LOG.log(Level.INFO, () -> messageType.name() + " message sent: " + message + " to " + nextNode);
-                // wait for acknowledgement
-                buffer = new byte[Constants.BUFFER_SIZE];
-                packet = new DatagramPacket(buffer, buffer.length);
-                buffer = packet.getData();
-                byteArrayInputStream = new ByteArrayInputStream(buffer);
-                dataInputStream = new DataInputStream(byteArrayInputStream);
-                socket.receive(packet);
-                byte msgType = dataInputStream.readByte();
-                if (msgType == MessageType.ACKNOWLEDGEMENT.ordinal()) {
-                    int msgId = dataInputStream.readInt();
-                    if (msgId == message.getId()) {
-                        LOG.log(Level.INFO, () -> MessageType.ACKNOWLEDGEMENT.name() + " received, id: " + msgId);
-                    }
+        private boolean receiveAcknowledgement(int ackId) throws IOException {
+            // wait for acknowledgement
+            buffer = new byte[Constants.BUFFER_SIZE];
+            packet = new DatagramPacket(buffer, buffer.length);
+            buffer = packet.getData();
+            byteArrayInputStream = new ByteArrayInputStream(buffer);
+            dataInputStream = new DataInputStream(byteArrayInputStream);
+            socket.receive(packet);
+            byte msgType = dataInputStream.readByte();
+            if (msgType == MessageType.ACKNOWLEDGEMENT.ordinal()) {
+                final int msgId = dataInputStream.readInt();
+                if (msgId == ackId) {
+                    LOG.log(Level.INFO, () -> "[" + msgId + "] " + MessageType.ACKNOWLEDGEMENT.name() + " received from "
+                            + packet.getAddress() + ":" + packet.getPort());
+                    return true;
                 }
-            } catch (IOException e) {
-                LOG.log(Level.SEVERE, e.getMessage(), e);
             }
+            return false;
+        }
+
+        private Message receiveMessage() throws IOException {
+            buffer = new byte[Constants.BUFFER_SIZE];
+            packet = new DatagramPacket(buffer, buffer.length);
+            socket.receive(packet);
+            buffer = packet.getData();
+            byteArrayInputStream = new ByteArrayInputStream(buffer);
+            dataInputStream = new DataInputStream(byteArrayInputStream);
+            byte messageType = dataInputStream.readByte();
+            byte msgType = messageType;
+            int msgId = dataInputStream.readInt();
+            byte senderId = dataInputStream.readByte();
+            int senderAptitude = dataInputStream.readInt();
+            Message message = new Message(MessageType.getById(msgType), msgId, senderId, senderAptitude);
+            LOG.log(Level.INFO, () -> message + " received from " + packet.getAddress() + ":" + packet.getPort());
+            return message;
+        }
+
+        private void sendAcknowledgement(int ackId) throws IOException {
+            InetAddress senderAddress = packet.getAddress();
+            int senderPort = packet.getPort();
+            dataOutputStream.writeByte(MessageType.ACKNOWLEDGEMENT.ordinal());
+            dataOutputStream.writeInt(ackId);
+            byte[] response = byteArrayOutputStream.toByteArray();
+            packet = new DatagramPacket(response, response.length, senderAddress, senderPort);
+            socket.send(packet);
+            byteArrayOutputStream.reset();
+            LOG.log(Level.INFO, () -> "[" + ackId + "] " + MessageType.ACKNOWLEDGEMENT.name() + " sent to "
+                    + packet.getAddress() + ":" + packet.getPort());
         }
 
         @Override
         public void run() {
-            int messageId = 1;
-            if (launchElection) {
-                sendMessageAndReceiveAck(MessageType.ANNOUNCEMENT, new Message(messageId++, id, aptitude));
-            }
-
-            byte[] buffer;
-            DatagramPacket packet;
-            ByteArrayInputStream byteArrayInputStream;
-            DataInputStream dataInputStream;
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
-            LOG.log(Level.INFO, () -> "Listening on " + localAddress);
-            while (shouldRun) {
-                try {
-                    // receive a message
-                    buffer = new byte[Constants.BUFFER_SIZE];
-                    packet = new DatagramPacket(buffer, buffer.length);
-                    socket.receive(packet);
-                    buffer = packet.getData();
-                    byteArrayInputStream = new ByteArrayInputStream(buffer);
-                    dataInputStream = new DataInputStream(byteArrayInputStream);
-                    byte messageType = dataInputStream.readByte();
-                    int msgId = dataInputStream.readInt();
-                    byte senderId = dataInputStream.readByte();
-                    int senderAptitude = dataInputStream.readInt();
-                    Message message = new Message(messageId, senderId, senderAptitude);
-                    LOG.log(Level.INFO, () -> "Message received :" + message);
-
-                    // send an ACKNOWLEDGEMENT
-                    InetAddress senderAddress = packet.getAddress();
-                    int senderPort = packet.getPort();
-                    dataOutputStream.writeByte(MessageType.ACKNOWLEDGEMENT.ordinal());
-                    dataOutputStream.writeInt(msgId);
-                    byte[] response = byteArrayOutputStream.toByteArray();
-                    packet = new DatagramPacket(response, response.length, senderAddress, senderPort);
-                    socket.send(packet);
-                    LOG.log(Level.INFO, () -> "[" + msgId + "]" + MessageType.ACKNOWLEDGEMENT.name() + " sent");
-                    byteArrayOutputStream.reset();
-                } catch (IOException e) {
-                    LOG.log(Level.SEVERE, e.getMessage(), e);
+            try {
+                int messageId = 1;
+                if (launchElection) {
+                    sendMessage(new Message(MessageType.ANNOUNCEMENT, messageId, id, aptitude));
+                    receiveAcknowledgement(messageId);
                 }
+                LOG.log(Level.INFO, () -> "Listening on " + localAddress);
+                while (shouldRun) {
+                    // receive a message
+                    Message message = receiveMessage();
+                    // send an ACKNOWLEDGEMENT
+                    sendAcknowledgement(message.getId());
+                    messageId = message.getId()+1;
+                    sendMessage(new Message(MessageType.ANNOUNCEMENT, messageId, id, aptitude));
+                    receiveAcknowledgement(messageId);
+                    messageId++;
+                }
+            } catch (IOException e) {
+                LOG.log(Level.SEVERE, e.getMessage(), e);
             }
         }
     }

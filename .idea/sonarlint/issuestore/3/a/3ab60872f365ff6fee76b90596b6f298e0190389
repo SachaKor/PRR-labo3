@@ -1,0 +1,16 @@
+
+\
+squid:S106„"9Replace this use of System.out or System.err by a logger.(äéÏÆşÿÿÿÿ8ĞØìÀû,
+csquid:S1854Â"?Remove this useless assignment to local variable "messageType".(ÏøşÚüÿÿÿÿ8ĞØìÀû,
+Tsquid:S1481Â"0Remove this unused "messageType" local variable.(ÏøşÚüÿÿÿÿ8ĞØìÀû,
+Msquid:S2093,"*Change this "try" to a try-with-resources.(¡»¢üùÿÿÿÿ8ƒË€¼û,
+Msquid:S00108G")Either remove or fill this block of code.(çˆèŞüÿÿÿÿ8–·İ½û,
+}squid:S1488q"`Immediately return this expression instead of assigning it to the temporary variable "aptitude".(ÊØì8ƒ„„¼û,
+Qsquid:S1199ú"-Extract this nested code block into a method.(øæçëÿÿÿÿÿ8ĞØìÀû,
+Qsquid:S1199ÿ"-Extract this nested code block into a method.(ÔƒØùÿÿÿÿ8ĞØìÀû,
+jsquid:S2095/"LUse try-with-resources or close this "DatagramSocket" in a "finally" clause.(¢Ÿ¦8¯ëÈ½û,
+W
+squid:S106÷"9Replace this use of System.out or System.err by a logger.(î¿Õó8ĞØìÀû,
+Xsquid:S1141?"5Extract this nested try block into a separate method.(¡»¢üùÿÿÿÿ8ÿ…´½û,
+gsquid:UnusedPrivateMethod";Remove this unused private "getPreviousNodeAddress" method.(Ó·ë»8ĞØìÀû,
+dsquid:HiddenFieldCheckq"<Rename "aptitude" which hides the field declared at line 11.(ÊØì8ƒ„„¼û,
