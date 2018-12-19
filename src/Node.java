@@ -159,15 +159,6 @@ public class Node {
             socket.send(packet);
             LOG.log(Level.INFO, () -> messageList + " sent to " + receiver);
             byteArrayOutputStream.reset();
-//            dataOutputStream.writeByte((byte) messageList.getMessageType().ordinal());
-//            dataOutputStream.writeInt(message.getId());
-//            dataOutputStream.writeByte(id);
-//            dataOutputStream.writeInt(message.getAptitude());
-//            buffer = byteArrayOutputStream.toByteArray();
-//            InetSocketAddress nextNode = getNextNodeAddress(id);
-//            packet = new DatagramPacket(buffer, buffer.length, nextNode.getAddress(), nextNode.getPort());
-//            socket.send(packet);
-//            byteArrayOutputStream.reset();
         }
 
         /**
@@ -244,6 +235,35 @@ public class Node {
                     + packet.getAddress() + ":" + packet.getPort());
         }
 
+        private boolean sendListWithAckToNextActiveNode(MessageList messageList) {
+            boolean activeNodeFound = false;
+            int nextNodeId = (id+1)%nbNodes;
+            InetSocketAddress nextNodeAddress = nodes.get((byte)nextNodeId);
+            while (!activeNodeFound) {
+                try {
+                    sendMessageList(messageList, nextNodeAddress);
+                    try {
+                        socket.setSoTimeout(Constants.ACK_TIMEOUT);
+                        receiveAcknowledgement(messageList.getId());
+                        activeNodeFound = true;
+                        socket.setSoTimeout(0);
+                    } catch (SocketTimeoutException e) {
+                        InetSocketAddress nextAdr = nextNodeAddress;
+                        LOG.log(Level.WARNING, () -> "[" + messageList.getId() + "] "
+                                + MessageType.ACKNOWLEDGEMENT.name() + " from " + nextAdr + " timed out");
+                        nextNodeId = (nextNodeId+1)%nbNodes;
+                        if (nextNodeId == id) {
+                            return false;
+                        }
+                        nextNodeAddress = nodes.get((byte)nextNodeId);
+                    }
+                } catch (IOException e) {
+                    LOG.log(Level.SEVERE, e.getMessage(), e);
+                }
+            }
+            return true;
+        }
+
         @Override
         public void run() {
             try {
@@ -252,8 +272,8 @@ public class Node {
                     List<Message> messages = new ArrayList<>(1);
                     messages.add(new Message(id, aptitude));
                     MessageList messageList = new MessageList(messageId, MessageType.ANNOUNCEMENT, messages);
-                    sendMessageList(messageList, getNextNodeAddress(id));
-                    receiveAcknowledgement(messageId);
+                    // TODO: elect the current node if it is the only active one
+                    sendListWithAckToNextActiveNode(messageList);
                 }
                 LOG.log(Level.INFO, () -> "Listening on " + localAddress);
                 while (shouldRun) {
@@ -264,13 +284,7 @@ public class Node {
                     messageId = messageList.getId() + 1;
                     messageList.add(new Message(id, aptitude));
                     messageList.setId(messageId);
-                    sendMessageList(messageList, getNextNodeAddress(id));
-                    socket.setSoTimeout(Constants.ACK_TIMEOUT);
-                    try {
-                        receiveAcknowledgement(messageId);
-                    } catch (SocketTimeoutException e) {
-
-                    }
+                    sendListWithAckToNextActiveNode(messageList);
                 }
             } catch (IOException e) {
                 LOG.log(Level.SEVERE, e.getMessage(), e);
