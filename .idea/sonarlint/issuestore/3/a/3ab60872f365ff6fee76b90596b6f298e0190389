@@ -1,16 +1,26 @@
 
-\
-squid:S106„"9Replace this use of System.out or System.err by a logger.(äéÏÆşÿÿÿÿ8ĞØìÀû,
-csquid:S1854Â"?Remove this useless assignment to local variable "messageType".(ÏøşÚüÿÿÿÿ8ĞØìÀû,
-Tsquid:S1481Â"0Remove this unused "messageType" local variable.(ÏøşÚüÿÿÿÿ8ĞØìÀû,
-Msquid:S2093,"*Change this "try" to a try-with-resources.(¡»¢üùÿÿÿÿ8ƒË€¼û,
-Msquid:S00108G")Either remove or fill this block of code.(çˆèŞüÿÿÿÿ8–·İ½û,
-}squid:S1488q"`Immediately return this expression instead of assigning it to the temporary variable "aptitude".(ÊØì8ƒ„„¼û,
-Qsquid:S1199ú"-Extract this nested code block into a method.(øæçëÿÿÿÿÿ8ĞØìÀû,
-Qsquid:S1199ÿ"-Extract this nested code block into a method.(ÔƒØùÿÿÿÿ8ĞØìÀû,
-jsquid:S2095/"LUse try-with-resources or close this "DatagramSocket" in a "finally" clause.(¢Ÿ¦8¯ëÈ½û,
-W
-squid:S106÷"9Replace this use of System.out or System.err by a logger.(î¿Õó8ĞØìÀû,
-Xsquid:S1141?"5Extract this nested try block into a separate method.(¡»¢üùÿÿÿÿ8ÿ…´½û,
+[squid:S1854º"<Remove this useless assignment to local variable "messages".(Şğ•Ï8¥óÀü,
+Msquid:S00108]")Either remove or fill this block of code.(„ÙäÎıÿÿÿÿ8Øæ„¿ü,
+^squid:S1854š"?Remove this useless assignment to local variable "maxAptitude".(şÆ®ø8±æë¿ü,
+^squid:S1854–"?Remove this useless assignment to local variable "maxAptitude".(ñú¦—8±æë¿ü,
 gsquid:UnusedPrivateMethod";Remove this unused private "getPreviousNodeAddress" method.(Ó·ë»8ĞØìÀû,
-dsquid:HiddenFieldCheckq"<Rename "aptitude" which hides the field declared at line 11.(ÊØì8ƒ„„¼û,
+\
+squid:S106û"9Replace this use of System.out or System.err by a logger.(äéÏÆşÿÿÿÿ8µÌó¿ü,
+Osquid:S1481–"0Remove this unused "maxAptitude" local variable.(ñú¦—8±æë¿ü,
+dsquid:HiddenFieldCheckv"<Rename "aptitude" which hides the field declared at line 11.(ÊØì8ƒ„„¼û,
+Xsquid:S1854¹"9Remove this useless assignment to local variable "phase".(Û˜îº8™İï¿ü,
+Qsquid:S1199ö"-Extract this nested code block into a method.(ÔƒØùÿÿÿÿ8µÌó¿ü,
+Xsquid:S1141?"5Extract this nested try block into a separate method.(¡»¢üùÿÿÿÿ8ÿ…´½û,
+jsquid:S2095/"LUse try-with-resources or close this "DatagramSocket" in a "finally" clause.(¢Ÿ¦8¯ëÈ½û,
+V
+squid:S106_"9Replace this use of System.out or System.err by a logger.(Âß‡É8Ä£Œ¿ü,
+W
+squid:S106î"9Replace this use of System.out or System.err by a logger.(î¿Õó8µÌó¿ü,
+Nsquid:S1481£"*Remove this unused "phase" local variable.(—º¤ûÿÿÿÿ8±æë¿ü,
+Msquid:S2093,"*Change this "try" to a try-with-resources.(¡»¢üùÿÿÿÿ8ƒË€¼û,
+}squid:S1488v"`Immediately return this expression instead of assigning it to the temporary variable "aptitude".(ÊØì8ƒ„„¼û,
+Qsquid:S1199ñ"-Extract this nested code block into a method.(øæçëÿÿÿÿÿ8µÌó¿ü,
+Ysquid:S1141û"5Extract this nested try block into a separate method.(¡»¢üùÿÿÿÿ8Ö¿À½ü,
+Qsquid:S1135»"2Complete the task associated to this TODO comment.(…ïœ†8¥óÀü,
+Msquid:S00108G")Either remove or fill this block of code.(çˆèŞüÿÿÿÿ8–·İ½û,
+Lsquid:S1481º"-Remove this unused "messages" local variable.(Şğ•Ï8¥óÀü,

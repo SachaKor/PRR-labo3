@@ -87,7 +87,12 @@ public class Node {
     }
 
     public void start(boolean launchElection) {
-        new Thread(new ElectionManager(launchElection)).start();
+        ElectionManager electionManager = new ElectionManager(launchElection);
+        Thread electionThread = new Thread(electionManager);
+        electionThread.start();
+        while (electionThread.isAlive()) {}
+        byte electedNode = electionManager.getElectedNodeId();
+        System.out.println("NODE ELECTED: " + electedNode + " (" + nodes.get(electedNode) + ")\n");
     }
 
     /**
@@ -119,6 +124,7 @@ public class Node {
         private DatagramSocket socket;
         private boolean shouldRun;
         private boolean launchElection;
+        private byte electedNodeId = -1;
 
         // streams and a buffer and a datagram packet needed to communicate to other nodes
         byte[] buffer;
@@ -264,16 +270,35 @@ public class Node {
             return true;
         }
 
+        byte getElectedNodeId() {
+            return electedNodeId;
+        }
+
+        private byte elect(MessageList messageList) {
+            int maxAptitude = aptitude;
+            byte electedNode = id;
+            for (Message m : messageList.getMessages()) {
+                if (m.getAptitude() > aptitude) {
+                    maxAptitude = m.getAptitude();
+                    electedNode = m.getNodeId();
+                }
+            }
+            return electedNode;
+        }
+
         @Override
         public void run() {
+            Phase phase = Phase.ANNOUNCEMENT;
             try {
                 int messageId = 1;
                 if (launchElection) {
                     List<Message> messages = new ArrayList<>(1);
                     messages.add(new Message(id, aptitude));
                     MessageList messageList = new MessageList(messageId, MessageType.ANNOUNCEMENT, messages);
-                    // TODO: elect the current node if it is the only active one
-                    sendListWithAckToNextActiveNode(messageList);
+                    if(!sendListWithAckToNextActiveNode(messageList)) {
+                        shouldRun = false;
+                        electedNodeId = id;
+                    }
                 }
                 LOG.log(Level.INFO, () -> "Listening on " + localAddress);
                 while (shouldRun) {
@@ -281,10 +306,27 @@ public class Node {
                     MessageList messageList = receiveMessageList();
                     // send an ACKNOWLEDGEMENT
                     sendAcknowledgement(messageList.getId());
-                    messageId = messageList.getId() + 1;
-                    messageList.add(new Message(id, aptitude));
-                    messageList.setId(messageId);
-                    sendListWithAckToNextActiveNode(messageList);
+                    switch (messageList.getMessageType()) {
+                        case ANNOUNCEMENT:
+                            if (messageList.contains(new Message(id, aptitude))) {
+                                electedNodeId = elect(messageList);
+                                phase = Phase.RESULT;
+                                List<Message> messages = new ArrayList<>(1);
+                                // TODO
+                            } else {
+                                messageId = messageList.getId() + 1;
+                                messageList.add(new Message(id, aptitude));
+                                messageList.setId(messageId);
+                                sendListWithAckToNextActiveNode(messageList);
+                            }
+
+                            break;
+                        case RESULT:
+                            break;
+                        default:
+                            LOG.log(Level.SEVERE, "Unknown message type");
+                            return;
+                    }
                 }
             } catch (IOException e) {
                 LOG.log(Level.SEVERE, e.getMessage(), e);

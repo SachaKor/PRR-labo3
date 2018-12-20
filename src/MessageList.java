@@ -54,4 +54,8 @@ public class MessageList {
     public int getSenderId() {
         return messages.get(messages.size()-1).getNodeId();
     }
+
+    public boolean contains(Message message) {
+        return messages.contains(message);
+    }
 }
